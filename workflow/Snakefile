@@ -1,0 +1,85 @@
+import os
+
+configfile: "config/config.yaml"
+project = config["project"][0]
+
+# if sample file exists, get samples
+SAMPLES_FILE = "config/samples.txt"
+if os.path.exists(SAMPLES_FILE):
+    samples = SAMPLES_FILE
+else:
+    samples = NA
+
+# only run rules for profiles listed in config/config.yaml
+profiles_in_config = set(config.get("profiles", []))
+def in_config(profile):
+    return profile in profiles_in_config
+
+
+rule all:
+    input:
+        expand("data/results/{project}_MAE.RDS")
+
+# --------------------------------------------------------
+# get individual profiles
+
+if in_config("simple_nucleotide_variation"):
+    rule simple_nucleotide_variation:
+        input:
+            project = project
+            samples = sample
+        output: "data/procdata/simple_nucleotide_variation.RDS"
+        shell:
+            """
+            Rscript get_snv.R {input.project} {output} {input.samples}
+            """
+
+if in_config("trancriptome_profiling"):
+    rule trancriptome_profiling:
+        input:
+            project = project
+            samples = sample
+        output: "data/procdata/trancriptome_profiling.RDS"
+        shell:
+            """
+            Rscript get_snv.R {input.project} {output} {input.samples}
+            """
+
+if in_config("dna_methylation"):
+    rule dna_methylation:
+        input:
+            project = project
+            samples = sample
+        output: "data/procdata/dna_methylation.RDS"
+        shell:
+            """
+            Rscript get_methylation.R {input.project} {output} {input.samples}
+            """
+
+# --------------------------------------------------------
+# collect available profiles for MAE
+
+mae_inputs = []
+
+if in_config("simple_nucleotide_variation"):
+    mae_inputs.append("data/procdata/simple_nucleotide_variation.RDS")
+
+if in_config("trancriptome_profiling"):
+    mae_inputs.append("data/procdata/trancriptome_profiling.RDS")
+
+if in_config("dna_methylation"):
+    mae_inputs.append("data/procdata/dna_methylation.RDS")
+
+
+# --------------------------------------------------------
+# create MAE
+
+rule get_MAE:
+    input:
+        project = project
+        profiles = mae_inputs
+    output: "data/results/{project}_MAE.RDS"
+    shell:
+        """
+        Rscript get_MAE.R {input.project} {input.profiles} {output}
+        """

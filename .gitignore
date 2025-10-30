@@ -378,7 +378,4 @@ site/
 #############################################################################
 
 # Add your project-specific entries here
-# For example:
-# models/
-# sandbox/
-# etc.
+GDCdata

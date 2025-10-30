@@ -1,15 +1,8 @@
 # Developer Notes
 
-## Purpose of This Section
+## Overview of Section
 
-This section is for documenting technical decisions, challenges, and solutions encountered during your project. These notes are valuable for:
-
-- Future you (who will forget why certain decisions were made)
-- Collaborators who join the project later
-- People coming from your publication who want to reproduce your work
-- Anyone who might want to extend your research
-
-## What to Document
+This section documents technical decisions in creating the TCGA data objects.
 
 ### Design Decisions
 
