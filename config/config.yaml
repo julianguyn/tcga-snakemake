@@ -1,11 +1,10 @@
 project:
-- TCGA-BRCA
+  - TCGA-BRCA
 
 profiles:
   - simple_nucleotide_variation
   - copy_number_variation
-  - trancriptome_profiling
+  - gene_expression
   - dna_methylation
   - protein_profiling
   - clinical
-  - somatic_structural_variation

@@ -25,15 +25,13 @@ if (!is.na(samples)) barcodes <- scan(samples, what = "", quiet = TRUE)
 # Run query
 ###########################################################
 
-## TODO:: try EPIC first, catch and try 450 second
-
 if (!is.na(samples)) {
     message(paste("Running query on *selected* samples from", project))
     query <- GDCquery(
         project = project,
-        data.category = "DNA Methylation",
-        data.type = "Methylation Beta Value",
-        platform = "Illumina Human Methylation 450",
+        data.category = "Simple Nucleotide Variation",
+        data.type = "Masked Somatic Mutation",
+        access = "open",
         sample.type = c("Primary Tumor"),
         barcode = barcodes
     )
@@ -41,9 +39,9 @@ if (!is.na(samples)) {
     message(paste("Running query on *all* samples from", project))
     query <- GDCquery(
         project = project,
-        data.category = "DNA Methylation",
-        data.type = "Methylation Beta Value",
-        platform = "Illumina Human Methylation 450",
+        data.category = "Simple Nucleotide Variation",
+        data.type = "Masked Somatic Mutation",
+        access = "open",
         sample.type = c("Primary Tumor")
     )
 }

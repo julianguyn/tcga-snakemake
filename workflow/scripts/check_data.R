@@ -11,3 +11,6 @@ check_data <- function(project, profile, samples) {
 
 
 ## would be nice if it can check the platforms and whatnot here too
+
+# check clinical information retrieval:data_categories
+information.clinical <- GDCquery_clinic(project = "TCGA-BRCA",type = "clinical") 

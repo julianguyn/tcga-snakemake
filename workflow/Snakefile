@@ -27,33 +27,66 @@ if in_config("simple_nucleotide_variation"):
     rule simple_nucleotide_variation:
         input:
             project = project
-            samples = sample
+            samples = samples
         output: "data/procdata/simple_nucleotide_variation.RDS"
         shell:
             """
             Rscript get_snv.R {input.project} {output} {input.samples}
             """
 
-if in_config("trancriptome_profiling"):
-    rule trancriptome_profiling:
+if in_config("copy_number_variation"):
+    rule copy_number_variation:
         input:
             project = project
-            samples = sample
-        output: "data/procdata/trancriptome_profiling.RDS"
+            samples = samples
+        output: "data/procdata/copy_number_variation.RDS"
         shell:
             """
             Rscript get_snv.R {input.project} {output} {input.samples}
+            """
+
+if in_config("gene_expression"):
+    rule gene_expression:
+        input:
+            project = project
+            samples = samples
+        output: "data/procdata/gene_expression.RDS"
+        shell:
+            """
+            Rscript get_gene_exp.R {input.project} {output} {input.samples}
             """
 
 if in_config("dna_methylation"):
     rule dna_methylation:
         input:
             project = project
-            samples = sample
+            samples = samples
         output: "data/procdata/dna_methylation.RDS"
         shell:
             """
             Rscript get_methylation.R {input.project} {output} {input.samples}
+            """
+
+if in_config("protein_profiling"):
+    rule protein_profiling:
+        input:
+            project = project
+            samples = samples
+        output: "data/procdata/protein_profiling.RDS"
+        shell:
+            """
+            Rscript get_protein_exp.R {input.project} {output} {input.samples}
+            """
+
+if in_config("clinical"):
+    rule clinical:
+        input:
+            project = project
+            samples = samples
+        output: "data/procdata/clinical.RDS"
+        shell:
+            """
+            Rscript get_clinical.R {input.project} {output} {input.samples}
             """
 
 # --------------------------------------------------------
@@ -64,12 +97,20 @@ mae_inputs = []
 if in_config("simple_nucleotide_variation"):
     mae_inputs.append("data/procdata/simple_nucleotide_variation.RDS")
 
-if in_config("trancriptome_profiling"):
-    mae_inputs.append("data/procdata/trancriptome_profiling.RDS")
+if in_config("copy_number_variation"):
+    mae_inputs.append("data/procdata/copy_number_variation.RDS")
+
+if in_config("gene_expression"):
+    mae_inputs.append("data/procdata/gene_expression.RDS")
 
 if in_config("dna_methylation"):
     mae_inputs.append("data/procdata/dna_methylation.RDS")
 
+if in_config("protein_profiling"):
+    mae_inputs.append("data/procdata/protein_profiling.RDS")
+
+if in_config("clinical"):
+    mae_inputs.append("data/procdata/clinical.RDS")
 
 # --------------------------------------------------------
 # create MAE
