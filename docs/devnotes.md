@@ -37,11 +37,3 @@ needs:
 
 - `bioconductor-tcgabiolinksgui.data` so `TCGAbiolinks` loads cleanly in the Pixi env
 - `bioconductor-multiassayexperiment` for final MAE assembly
-
-Because the Bioconductor data package is distributed through a post-link installer,
-it has to be materialized explicitly inside the Pixi environment before a real
-workflow run with:
-
-```bash
-PREFIX=$PWD/.pixi/envs/default pixi run installBiocDataPackage.sh tcgabiolinksgui.data-1.30.0
-```

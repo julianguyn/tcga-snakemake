@@ -24,15 +24,9 @@ were available.
 pixi install
 ```
 
-3. Install the Bioconductor data package required by `TCGAbiolinks`:
-
-```bash
-PREFIX=$PWD/.pixi/envs/default pixi run installBiocDataPackage.sh tcgabiolinksgui.data-1.30.0
-```
-
-4. Edit [`config/config.yaml`](/Users/michael/Projects/BHKLab/tcga-snakemake/config/config.yaml)
+3. Edit [`config/config.yaml`](/Users/michael/Projects/BHKLab/tcga-snakemake/config/config.yaml)
    to choose TCGA projects and profiles.
-5. Optionally add a shared `config/samples.txt` file or project-specific files such as
+4. Optionally add a shared `config/samples.txt` file or project-specific files such as
    `config/samples/TCGA-BRCA.txt`.
 
 See the [Usage](usage.md) page for config details and execution examples.

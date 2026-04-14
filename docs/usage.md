@@ -50,13 +50,6 @@ Lint the Snakefile:
 pixi run snakemake --snakefile workflow/Snakefile --lint
 ```
 
-Before the first real run, bootstrap the Bioconductor data package required by
-`TCGAbiolinks`:
-
-```bash
-PREFIX=$PWD/.pixi/envs/default pixi run installBiocDataPackage.sh tcgabiolinksgui.data-1.30.0
-```
-
 Execute the workflow when you are ready:
 
 ```bash

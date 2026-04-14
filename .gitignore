@@ -189,7 +189,7 @@ dmypy.json
 cython_debug/
 
 # Pixi package manager
-.pixi
+.pixi/*
 
 #############################################################################
 # 3. R RELATED FILES
