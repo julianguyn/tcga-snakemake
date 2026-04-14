@@ -1,126 +1,106 @@
-import os
+import re
+from pathlib import Path
+
+from snakemake.exceptions import WorkflowError
+
 
 configfile: "config/config.yaml"
-project = config["project"][0]
 
-# if sample file exists, get samples
-SAMPLES_FILE = "config/samples.txt"
-if os.path.exists(SAMPLES_FILE):
-    samples = SAMPLES_FILE
-else:
-    samples = NA
 
-# only run rules for profiles listed in config/config.yaml
-profiles_in_config = set(config.get("profiles", []))
-def in_config(profile):
-    return profile in profiles_in_config
+SUPPORTED_PROFILES = (
+    "simple_nucleotide_variation",
+    "copy_number_variation",
+    "gene_expression",
+    "dna_methylation",
+    "protein_profiling",
+    "clinical",
+)
+
+
+def config_list(key):
+    values = config.get(key, [])
+    if values is None:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    if not isinstance(values, list):
+        raise WorkflowError(f"Config key '{key}' must be a string or list of strings.")
+
+    cleaned = [str(value).strip() for value in values if str(value).strip()]
+    return cleaned
+
+
+PROJECTS = config_list("projects") or config_list("project")
+PROFILES = config_list("profiles")
+
+if not PROJECTS:
+    raise WorkflowError("Config must define at least one TCGA project under 'projects'.")
+
+if not PROFILES:
+    raise WorkflowError("Config must define at least one profile under 'profiles'.")
+
+unknown_profiles = sorted(set(PROFILES) - set(SUPPORTED_PROFILES))
+if unknown_profiles:
+    raise WorkflowError(
+        "Unsupported profiles in config: "
+        + ", ".join(unknown_profiles)
+        + ". Supported profiles are: "
+        + ", ".join(sorted(SUPPORTED_PROFILES))
+    )
+
+PROJECT_PATTERN = "|".join(re.escape(project) for project in PROJECTS)
+PROFILE_PATTERN = "|".join(re.escape(profile) for profile in PROFILES)
+
+
+def resolve_samples_file(project):
+    project_specific = Path("config") / "samples" / f"{project}.txt"
+    shared = Path("config") / "samples.txt"
+
+    if project_specific.exists():
+        return str(project_specific)
+    if shared.exists():
+        return str(shared)
+
+    return ""
+
+
+def profile_output(project, profile):
+    return f"data/procdata/{project}/{profile}.RDS"
+
+
+def mae_inputs(wildcards):
+    return [profile_output(wildcards.project, profile) for profile in PROFILES]
 
 
 rule all:
     input:
-        expand("data/results/{project}_MAE.RDS")
+        expand("data/results/{project}_MAE.RDS", project=PROJECTS)
 
-# --------------------------------------------------------
-# get individual profiles
 
-if in_config("simple_nucleotide_variation"):
-    rule simple_nucleotide_variation:
-        input:
-            project = project
-            samples = samples
-        output: "data/procdata/simple_nucleotide_variation.RDS"
-        shell:
-            """
-            Rscript get_snv.R {input.project} {output} {input.samples}
-            """
+rule download_profile:
+    output:
+        profile="data/procdata/{project}/{profile}.RDS"
+    log:
+        "logs/{project}/{profile}.log"
+    params:
+        sample_file=lambda wildcards: resolve_samples_file(wildcards.project),
+    threads: 1
+    wildcard_constraints:
+        project=PROJECT_PATTERN,
+        profile=PROFILE_PATTERN,
+    script:
+        "scripts/download_profile.R"
 
-if in_config("copy_number_variation"):
-    rule copy_number_variation:
-        input:
-            project = project
-            samples = samples
-        output: "data/procdata/copy_number_variation.RDS"
-        shell:
-            """
-            Rscript get_snv.R {input.project} {output} {input.samples}
-            """
 
-if in_config("gene_expression"):
-    rule gene_expression:
-        input:
-            project = project
-            samples = samples
-        output: "data/procdata/gene_expression.RDS"
-        shell:
-            """
-            Rscript get_gene_exp.R {input.project} {output} {input.samples}
-            """
-
-if in_config("dna_methylation"):
-    rule dna_methylation:
-        input:
-            project = project
-            samples = samples
-        output: "data/procdata/dna_methylation.RDS"
-        shell:
-            """
-            Rscript get_methylation.R {input.project} {output} {input.samples}
-            """
-
-if in_config("protein_profiling"):
-    rule protein_profiling:
-        input:
-            project = project
-            samples = samples
-        output: "data/procdata/protein_profiling.RDS"
-        shell:
-            """
-            Rscript get_protein_exp.R {input.project} {output} {input.samples}
-            """
-
-if in_config("clinical"):
-    rule clinical:
-        input:
-            project = project
-            samples = samples
-        output: "data/procdata/clinical.RDS"
-        shell:
-            """
-            Rscript get_clinical.R {input.project} {output} {input.samples}
-            """
-
-# --------------------------------------------------------
-# collect available profiles for MAE
-
-mae_inputs = []
-
-if in_config("simple_nucleotide_variation"):
-    mae_inputs.append("data/procdata/simple_nucleotide_variation.RDS")
-
-if in_config("copy_number_variation"):
-    mae_inputs.append("data/procdata/copy_number_variation.RDS")
-
-if in_config("gene_expression"):
-    mae_inputs.append("data/procdata/gene_expression.RDS")
-
-if in_config("dna_methylation"):
-    mae_inputs.append("data/procdata/dna_methylation.RDS")
-
-if in_config("protein_profiling"):
-    mae_inputs.append("data/procdata/protein_profiling.RDS")
-
-if in_config("clinical"):
-    mae_inputs.append("data/procdata/clinical.RDS")
-
-# --------------------------------------------------------
-# create MAE
-
-rule get_MAE:
+rule get_mae:
     input:
-        project = project
-        profiles = mae_inputs
-    output: "data/results/{project}_MAE.RDS"
-    shell:
-        """
-        Rscript get_MAE.R {input.project} {input.profiles} {output}
-        """
+        mae_inputs
+    output:
+        mae="data/results/{project}_MAE.RDS"
+    log:
+        "logs/{project}/get_mae.log"
+    threads: 1
+    wildcard_constraints:
+        project=PROJECT_PATTERN,
+    script:
+        "scripts/get_MAE.R"

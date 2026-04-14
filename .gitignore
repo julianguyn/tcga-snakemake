@@ -379,3 +379,4 @@ site/
 
 # Add your project-specific entries here
 GDCdata
+.snakemake

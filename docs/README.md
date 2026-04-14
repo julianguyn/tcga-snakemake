@@ -1,40 +1,38 @@
 # TCGA Snakemake
 
-**Authors:** [Julia Nguyen](https://github.com/julianguyn)
+This repository builds project-specific TCGA datasets from the GDC with
+[`TCGAbiolinks`](https://bioconductor.org/packages/release/bioc/html/TCGAbiolinks.html)
+and assembles them into one `MultiAssayExperiment` (MAE) per TCGA project.
 
-**Contact:** [julianguyen.bhklab@gmail.com](mailto:julianguyen.bhklab@gmail.com)
+## What The Pipeline Produces
 
-**Description:** Create TCGA datasets for ORCESTRA
+- One intermediate RDS per selected profile and project under `data/procdata/<PROJECT>/`
+- One MAE per configured project at `data/results/<PROJECT>_MAE.RDS`
+- Clinical metadata in `colData`
+- Molecular assays in the MAE `ExperimentList`
 
---------------------------------------
+If a selected profile is unavailable for a given project, the workflow records that
+status in the intermediate RDS and still builds the project MAE from the assays that
+were available.
 
-[![pixi-badge](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json&style=flat-square)](https://github.com/prefix-dev/pixi)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square)](https://github.com/astral-sh/ruff)
-[![Built with Material for MkDocs](https://img.shields.io/badge/mkdocs--material-gray?logo=materialformkdocs&style=flat-square)](https://github.com/squidfunk/mkdocs-material)
+## Setup
 
-![GitHub last commit](https://img.shields.io/github/last-commit/julianguyn/tcga-snakemake?style=flat-square)
-![GitHub issues](https://img.shields.io/github/issues/julianguyn/tcga-snakemake?style=flat-square)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/julianguyn/tcga-snakemake?style=flat-square)
-![GitHub contributors](https://img.shields.io/github/contributors/julianguyn/tcga-snakemake?style=flat-square)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/julianguyn/tcga-snakemake?style=flat-square)
-
-## Set Up
-
-### Prerequisites
-
-Pixi is required to run this project.
-If you haven't installed it yet, [follow these instructions](https://pixi.sh/latest/)
-
-### Installation
-
-1. Clone this repository to your local machine
-2. Navigate to the project directory
-3. Set up the environment using Pixi:
+1. Install Pixi.
+2. From the repository root, install the environment:
 
 ```bash
 pixi install
 ```
 
-## Documentation
+3. Install the Bioconductor data package required by `TCGAbiolinks`:
 
-Click [here](https://julianguyn.github.io/tcga-snakemake) to view the full documentation.
+```bash
+PREFIX=$PWD/.pixi/envs/default pixi run installBiocDataPackage.sh tcgabiolinksgui.data-1.30.0
+```
+
+4. Edit [`config/config.yaml`](/Users/michael/Projects/BHKLab/tcga-snakemake/config/config.yaml)
+   to choose TCGA projects and profiles.
+5. Optionally add a shared `config/samples.txt` file or project-specific files such as
+   `config/samples/TCGA-BRCA.txt`.
+
+See the [Usage](usage.md) page for config details and execution examples.

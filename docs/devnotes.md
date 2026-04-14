@@ -1,48 +1,47 @@
 # Developer Notes
 
-## Overview of Section
+## 2026-04-14
 
-This section documents technical decisions in creating the TCGA data objects.
+### Workflow Structure
 
-### Design Decisions
+The original Snakefile treated the workflow as a single-project pipeline and reused the
+same output filenames for every profile regardless of project. The workflow now uses
+`project` and `profile` wildcards so each selected TCGA project produces isolated
+intermediates under `data/procdata/<PROJECT>/` and one final MAE at
+`data/results/<PROJECT>_MAE.RDS`.
 
-Document important decisions about your project's architecture, algorithms, or methodologies:
+### Unavailable Profiles
 
-``` markdown
-## Choice of RNA-Seq Analysis Pipeline
+Not every TCGA project exposes every selected data type. Instead of failing the entire
+workflow when a profile is missing for a project, each profile rule now writes a
+structured RDS with `status = "unavailable"`. MAE assembly skips those assays but
+preserves the status in MAE metadata.
 
-[2025-04-25] We chose the kallisto over STAR pipeline for the following reasons:
-    1. The CCLE dataset is very large, and kallisto is faster for quantifying large datasets
-    2. GDSC used kallisto, so we can compare our results with theirs
+Mutation data is a special case: the workflow no longer relies on
+`TCGAbiolinks:::getProjectSummary()` to decide whether SNV exists for a project, because
+that summary can report false negatives. Availability is now determined by the actual
+`GDCquery()` result.
+
+### MAE Conventions
+
+- Clinical data lives in `colData`.
+- Molecular datasets live in the MAE `ExperimentList`.
+- Sample mapping is done at the participant level using the first 12 characters of the
+  TCGA barcode.
+- SNV data is represented in the MAE as a gene-by-sample mutation count matrix.
+
+### Environment Notes
+
+The Pixi environment now pins the missing runtime packages that the workflow actually
+needs:
+
+- `bioconductor-tcgabiolinksgui.data` so `TCGAbiolinks` loads cleanly in the Pixi env
+- `bioconductor-multiassayexperiment` for final MAE assembly
+
+Because the Bioconductor data package is distributed through a post-link installer,
+it has to be materialized explicitly inside the Pixi environment before a real
+workflow run with:
+
+```bash
+PREFIX=$PWD/.pixi/envs/default pixi run installBiocDataPackage.sh tcgabiolinksgui.data-1.30.0
 ```
-
-### Technical Challenges
-
-Record significant problems you encountered and how you solved them
-
-``` markdown
-## Sample Name Format Issue
-
-[2025-04-25] We encountered a problem with sample name formats between the CCLE and GDSC datasets.
-    The CCLE dataset uses "BRCA-XX-XXXX" format, while the GDSC dataset uses "BRCA-XX-XXXX-XX".
-    We had to write a script to remove the last two characters from the sample names in the GDSC dataset.
-```
-
-### Dependencies and Environment
-
-Document specific version requirements or compatibility issues:
-
-``` markdown
-## Critical Version Dependencies
-
-[2025-04-25] SimpleITK 2.4.1 introduced a bug that flips images, so we froze version 2.4.0
-```
-
-## Best Practices
-
-- Date your entries when appropriate
-- Link to relevant code files or external resources
-- Include small code snippets when helpful
-- Note alternatives you considered and why they were rejected
-- Document failed approaches to prevent others from repeating mistakes
-- Update notes when major changes are made to the approach

@@ -1,53 +1,57 @@
-# TCGA Biolinks Information
+# TCGAbiolinks Notes
 
-## Overview of Section
+The workflow uses the core `TCGAbiolinks` functions documented in the official package
+manual and vignette:
 
-This section provides information on the TCGAbiolinks R package and arguments used to collect the TCGA data objects.
+- [`GDCquery`](https://bioconductor.org/packages/release/bioc/manuals/TCGAbiolinks/man/TCGAbiolinks.pdf)
+- [`GDCdownload`](https://bioconductor.org/packages/release/bioc/manuals/TCGAbiolinks/man/TCGAbiolinks.pdf)
+- [`GDCprepare`](https://bioconductor.org/packages/release/bioc/manuals/TCGAbiolinks/man/TCGAbiolinks.pdf)
+- [`GDCquery_clinic`](https://bioconductor.org/packages/release/bioc/manuals/TCGAbiolinks/man/TCGAbiolinks.pdf)
 
-## TCGAbiolinks
+## How The Workflow Uses The Package
 
-TCGAbiolinks is a package available on [Bioconductor](https://bioconductor.org/packages/release/bioc/html/TCGAbiolinks.html) to faciliate access of GDC data. The package offers various methods for downstreama analyses, but those have not been incorporated into this pipeline. 
+For molecular profiles, the pipeline:
 
-## Data Access Arguments
+1. Builds a `GDCquery()` call from the selected profile key.
+2. Downloads matching files with `GDCdownload()`.
+3. Materializes an R object with `GDCprepare()`.
+4. Stores a structured RDS containing the prepared object and query metadata.
 
-This pipeline currently can only collect the data categories listed in `config/config.yaml`. For each data category, TCGAbiolinks takes several arguments into its query:
+For clinical data, the pipeline uses `GDCquery_clinic()` directly and then filters to
+selected samples, when a sample file is provided.
 
-```markdown
-query <- GDCquery(
-    project = <project>,                # TCGA Project Collection, e.g. "TCGA-ACC" 
-    data.category = <data.category>,    # Data Category from config
-    data.type = <data.type>             # More details of data to return
-)
-```
+## Profile-Specific Behavior
 
-More information on the query can be found [here](https://bioconductor.org/packages/release/bioc/vignettes/TCGAbiolinks/inst/doc/query.html).
+### Gene Expression
 
-This pipeline uses standardized data types and platforms. Information on these arguments can be found [here](https://bioconductor.org/packages/release/bioc/vignettes/TCGAbiolinks/inst/doc/download_prepare.html).
+The workflow fixes `workflow.type = "STAR - Counts"` so expression matrices are
+consistent across projects.
 
+### DNA Methylation
 
+TCGA methylation availability differs across projects, so the script tries these
+platforms in order and uses the first one that returns files:
 
-A summary of alternative data options are listed below:
+1. `Illumina Methylation Epic`
+2. `Illumina Human Methylation 450`
+3. `Illumina Human Methylation 27`
 
-### Profile: DNA Methylation
+### SNV To MAE Conversion
 
-**Query from pipeline:**
-```markdown
-query <- GDCquery(
-    project = "TCGA-BRCA",                  # modified for each dataset               
-    data.category = "DNA Methylation",    
-    data.type = "Methylation Beta Value",
-    platform = "Illumina Methylation Epic"           
-)
-```
+The mutation query uses
+`workflow.type = "Aliquot Ensemble Somatic Variant Merging and Masking"`, matching the
+official TCGAbiolinks mutation vignette. SNV availability is determined by the actual
+`GDCquery()` result rather than by `getProjectSummary()`, because the project summary
+can be incomplete for mutation data.
+Unlike the other profiles, the mutation query does not force `sample.type`, because the
+masked somatic mutation workflow does not expose the same sample-type filter surface.
 
-**Platforms:**
-1. `Illumina Methylation Epic` (default in pipeline): Returns methylation data from EPIC array.
-2. `Illumina Human Methylation 450`: Returns methylation data from the 45k array
-3. `Illumina Human Methylation 27`: Returns methylation data from the 27k array
+`GDCprepare()` returns SNV data as a tabular object. During MAE assembly, the workflow
+converts it into a gene-by-sample mutation count matrix using `Hugo_Symbol` and
+`Tumor_Sample_Barcode`.
 
-**Data Type:**
-1. `DNA Methylation` (default in pipeline): Returns methylation beta values
-2. `Masked Intensities`: Retrieves IDAT files (input to `platform` can be one of the three arguments listed above)
+### Clinical Integration
 
-
-TODO:: COMPLETE
+The MAE `colData` is keyed at the TCGA participant level, derived from the first
+12 characters of the TCGA barcode. Clinical rows are deduplicated on that same
+participant identifier before being matched back to assay samples.

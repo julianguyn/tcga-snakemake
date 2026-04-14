@@ -1,10 +1,15 @@
-project:
+projects:
   - TCGA-BRCA
+  - TCGA-COAD
+  - TCGA-STAD
+  - TCGA-ESCA
+  - TCGA-LUAD
+  - TCGA-LUSC
 
 profiles:
   - simple_nucleotide_variation
   - copy_number_variation
   - gene_expression
-  - dna_methylation
-  - protein_profiling
+  # - dna_methylation
+  # - protein_profiling
   - clinical
